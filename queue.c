@@ -6,6 +6,7 @@
 #include "queue.h"
 
 typedef struct list_head list_head_t;
+element_t *element_new(char *s);
 
 /* Notice: sometimes, Cppcheck would find the potential NULL pointer bugs,
  * but some of them cannot occur. You can suppress them by adding the
@@ -40,18 +41,9 @@ bool q_insert_head(struct list_head *head, char *s)
 {
     if (!head)
         return false;
-    element_t *node;
-    if (!(node = malloc(sizeof(*node))))
+    element_t *node = element_new(s);
+    if (!node)
         return false;
-
-    char *str;
-    int n = strlen(s) + 1;
-    if (!(str = malloc(sizeof(*str) * n))) {
-        free(node);
-        return false;
-    }
-    strncpy(str, s, n);
-    node->value = str;
     list_add(&node->list, head);
     return true;
 }
@@ -166,3 +158,32 @@ void q_reverse(struct list_head *head) {}
  * element, do nothing.
  */
 void q_sort(struct list_head *head) {}
+
+/*
+ * Create new element_t node and assign s to value.
+ * Return the address of node.
+ * The function allocate space and copy the string into it.
+ * If s points to NULL, value will point to NULL.
+ * If allocation fails, return NULL.
+ */
+
+element_t *element_new(char *s)
+{
+    element_t *node;
+    if (!(node = malloc(sizeof(*node))))
+        return NULL;
+
+    node->value = NULL;
+    if (s == NULL)
+        return node;
+
+    char *str;
+    int n = strlen(s) + 1;
+    if (!(str = malloc(sizeof(*str) * n))) {
+        free(node);
+        return NULL;
+    }
+    strncpy(str, s, n);
+    node->value = str;
+    return node;
+}
