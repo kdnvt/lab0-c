@@ -19,7 +19,11 @@ typedef struct list_head list_head_t;
  */
 struct list_head *q_new()
 {
-    return NULL;
+    list_head_t *node = malloc(sizeof(*node));
+    if (node)
+        INIT_LIST_HEAD(node);
+
+    return node;
 }
 
 /* Free all storage used by queue */
