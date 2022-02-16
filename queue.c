@@ -95,8 +95,7 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
     if (!head || list_empty(head))
         return NULL;
     list_head_t *rm_node = head->next;
-    head->next = rm_node->next;
-    head->next->prev = head;
+    list_del(rm_node);
 
     element_t *rm_ele = list_entry(rm_node, element_t, list);
     // If the value of removed element points to NULL, do nothing.
