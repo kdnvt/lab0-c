@@ -154,7 +154,13 @@ void q_release_element(element_t *e)
  */
 int q_size(struct list_head *head)
 {
-    return -1;
+    if (!head || list_empty(head))
+        return 0;
+    list_head_t *node;
+    unsigned count = 0;
+    list_for_each (node, head)
+        count++;
+    return count;
 }
 
 /*
