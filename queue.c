@@ -29,14 +29,12 @@ struct list_head *q_new()
 /* Free all storage used by queue */
 void q_free(struct list_head *l)
 {
-    /*
     if (!l)
         return;
     if (list_empty(l)) {
         free(l);
         return;
     }
-    */
     /*
     if (!l || (list_empty(l) && (free(l),true)))
         return ;
