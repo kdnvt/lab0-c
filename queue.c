@@ -203,20 +203,15 @@ bool q_delete_dup(struct list_head *head)
     bool last_dup = false;
     list_for_each_safe (node, safe, head) {
         element_t *cur = list_entry(node, element_t, list);
-        if (node->next != head &&
-            !strcmp(cur->value,
-                    list_entry(node->next, element_t, list)->value)) {
+        bool match =
+            node->next != head &&
+            !strcmp(cur->value, list_entry(node->next, element_t, list)->value);
+        if (match || last_dup) {
             list_del(node);
             q_release_element(cur);
-            last_dup = true;
-        } else if (last_dup) {
-            list_del(node);
-            q_release_element(cur);
-            last_dup = false;
         }
+        last_dup = match;
     }
-
-
     return true;
 }
 
