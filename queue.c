@@ -29,6 +29,18 @@ struct list_head *q_new()
 /* Free all storage used by queue */
 void q_free(struct list_head *l)
 {
+    /*
+    if (!l)
+        return;
+    if (list_empty(l)) {
+        free(l);
+        return;
+    }
+    */
+    /*
+    if (!l || (list_empty(l) && (free(l),true)))
+        return ;
+    */
     element_t *entry, *safe;
     list_for_each_entry_safe (entry, safe, l, list) {
         if (entry->value)
@@ -113,7 +125,19 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
  */
 element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 {
-    return NULL;
+    if (!head || list_empty(head))
+        return NULL;
+    list_head_t *rm_node = head->prev;
+    list_del(rm_node);
+
+    element_t *rm_ele = list_entry(rm_node, element_t, list);
+    // If the value of removed element points to NULL, do nothing.
+    if (!sp || !(rm_ele->value))
+        return rm_ele;
+
+    strncpy(sp, rm_ele->value, bufsize);
+    sp[bufsize - 1] = '\0';
+    return rm_ele;
 }
 
 /*
