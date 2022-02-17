@@ -226,6 +226,20 @@ bool q_delete_dup(struct list_head *head)
 void q_swap(struct list_head *head)
 {
     // https://leetcode.com/problems/swap-nodes-in-pairs/
+    if (!head || list_empty(head))
+        return;
+    list_head_t *node;
+    /* When traverse all queue, the operation swapping automatically
+     * move the node forward once. In the end of each iteration, it
+     * will only need (node = node->next) instead of
+     * (node = node->next->next).
+     */
+    for (node = head->next; node != head && node->next != head;
+         node = node->next) {
+        list_head_t *tmp = node->next;
+        list_del(tmp);
+        list_add_tail(tmp, node);
+    }
 }
 
 /*
