@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -289,27 +290,31 @@ void q_sort(struct list_head *head)
  */
 struct list_head *merge(struct list_head *left, struct list_head *right)
 {
-    struct list_head *head = left;
+    struct list_head *head;
 
-    if (strcmp(list_entry(left, element_t, list)->value,
-               list_entry(right, element_t, list)->value) > 0)
-        list_move_tail(head = (right = right->next)->prev, left);
+    int cmp = strcmp(list_entry(left, element_t, list)->value,
+                     list_entry(right, element_t, list)->value);
+    struct list_head **chosen =
+        cmp <= 0 ? &left : &right;  // cmp <= 0 for stability
+    head = *chosen;
+    *chosen = (*chosen)->next;
 
+    list_del_init(head);
+
+    while (left->next != head && right->next != head) {
+        cmp = strcmp(list_entry(left, element_t, list)->value,
+                     list_entry(right, element_t, list)->value);
+        chosen = cmp <= 0 ? &left : &right;  // cmp <= 0 for stability
+        list_move_tail((*chosen = (*chosen)->next)->prev, head);
+    }
+    struct list_head *remain = left->next != head ? left : right;
     struct list_head *tail = head->prev;
-    while (left != tail && right->next != left) {
-        int cmp = strcmp(list_entry(left, element_t, list)->value,
-                         list_entry(right, element_t, list)->value);
-        if (cmp <= 0)  // to keep sorting stable, split condition as <= , >
-            left = left->next;
-        else
-            list_move_tail((right = right->next)->prev, left);
-    }
-    while (right->next != left && right->next != head) {
-        int cmp = strcmp(list_entry(left, element_t, list)->value,
-                         list_entry(right, element_t, list)->value);
 
-        list_move_tail((right = right->next)->prev, cmp < 0 ? head : left);
-    }
+    head->prev = remain->prev;
+    head->prev->next = head;
+    remain->prev = tail;
+    remain->prev->next = remain;
+
     return head;
 }
 
