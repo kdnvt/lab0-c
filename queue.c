@@ -5,7 +5,6 @@
 #include "harness.h"
 #include "queue.h"
 
-typedef struct list_head list_head_t;
 element_t *element_new(char *s);
 /* Notice: sometimes, Cppcheck would find the potential NULL pointer bugs,
  * but some of them cannot occur. You can suppress them by adding the
@@ -19,7 +18,7 @@ element_t *element_new(char *s);
  */
 struct list_head *q_new()
 {
-    list_head_t *node = malloc(sizeof(*node));
+    struct list_head *node = malloc(sizeof(*node));
     if (node)
         INIT_LIST_HEAD(node);
 
@@ -104,7 +103,7 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 {
     if (!head || list_empty(head))
         return NULL;
-    list_head_t *rm_node = head->next;
+    struct list_head *rm_node = head->next;
     list_del(rm_node);
 
     element_t *rm_ele = list_entry(rm_node, element_t, list);
@@ -125,7 +124,7 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 {
     if (!head || list_empty(head))
         return NULL;
-    list_head_t *rm_node = head->prev;
+    struct list_head *rm_node = head->prev;
     list_del(rm_node);
 
     element_t *rm_ele = list_entry(rm_node, element_t, list);
@@ -156,7 +155,7 @@ int q_size(struct list_head *head)
 {
     if (!head || list_empty(head))
         return 0;
-    list_head_t *node;
+    struct list_head *node;
     unsigned count = 0;
     list_for_each (node, head)
         count++;
@@ -175,7 +174,7 @@ bool q_delete_mid(struct list_head *head)
     // https://leetcode.com/problems/delete-the-middle-node-of-a-linked-list/
     if (!head || list_empty(head))
         return false;
-    list_head_t *fast, *slow;
+    struct list_head *fast, *slow;
     for (fast = slow = head->next; fast != head && fast->next != head;
          slow = slow->next, fast = fast->next->next)
         ;
@@ -199,7 +198,7 @@ bool q_delete_dup(struct list_head *head)
     if (!head || list_empty(head))
         return false;
 
-    list_head_t *node, *safe;
+    struct list_head *node, *safe;
     bool last_dup = false;
     list_for_each_safe (node, safe, head) {
         element_t *cur = list_entry(node, element_t, list);
@@ -223,7 +222,7 @@ void q_swap(struct list_head *head)
     // https://leetcode.com/problems/swap-nodes-in-pairs/
     if (!head || list_empty(head))
         return;
-    list_head_t *node;
+    struct list_head *node;
     /* When traverse all queue, the operation swapping automatically
      * move the node forward once. In the end of each iteration, it
      * will only need (node = node->next) instead of
@@ -231,7 +230,7 @@ void q_swap(struct list_head *head)
      */
     for (node = head->next; node != head && node->next != head;
          node = node->next) {
-        list_head_t *tmp = node->next;
+        struct list_head *tmp = node->next;
         list_del(tmp);
         list_add_tail(tmp, node);
     }
@@ -248,7 +247,7 @@ void q_reverse(struct list_head *head)
 {
     if (!head || list_empty(head))
         return;
-    list_head_t *node, *safe;
+    struct list_head *node, *safe;
     list_for_each_safe (node, safe, head) {
         list_del(node);
         list_add(node, head);
