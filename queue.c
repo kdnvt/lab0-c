@@ -4,7 +4,9 @@
 
 #include "harness.h"
 #include "queue.h"
+#define STACKSIZE 1000000
 
+struct list_head *merge(struct list_head *left, struct list_head *right);
 element_t *element_new(char *s);
 /* Notice: sometimes, Cppcheck would find the potential NULL pointer bugs,
  * but some of them cannot occur. You can suppress them by adding the
@@ -259,7 +261,57 @@ void q_reverse(struct list_head *head)
  * No effect if q is NULL or empty. In addition, if q has only one
  * element, do nothing.
  */
-void q_sort(struct list_head *head) {}
+void q_sort(struct list_head *head)
+{
+    if (!head || list_empty(head) || list_is_singular(head))
+        return;
+
+    int count = 0, n = q_size(head);
+    struct list_head *sorted[STACKSIZE];
+
+    struct list_head *cur, *safe;
+    list_for_each_safe (cur, safe, head)
+        INIT_LIST_HEAD(sorted[count++] = cur);
+
+    for (int size_each_list = 1; size_each_list < n; size_each_list *= 2) {
+        for (int i = 0; i + size_each_list < n; i += size_each_list * 2) {
+            struct list_head *left = sorted[i];
+            struct list_head *right = sorted[i + size_each_list];
+            sorted[i] = merge(left, right);
+        }
+    }
+    list_add_tail(head, sorted[0]);
+}
+/*
+ * The list in this function is doubly circular linked_list without
+ * the Head node.
+ * Move each node in list right to list left at corresponding position.
+ */
+struct list_head *merge(struct list_head *left, struct list_head *right)
+{
+    struct list_head *head = left;
+
+    if (strcmp(list_entry(left, element_t, list)->value,
+               list_entry(right, element_t, list)->value) > 0)
+        list_move_tail(head = (right = right->next)->prev, left);
+
+    struct list_head *tail = head->prev;
+    while (left != tail && right->next != left) {
+        int cmp = strcmp(list_entry(left, element_t, list)->value,
+                         list_entry(right, element_t, list)->value);
+        if (cmp <= 0)  // to keep sorting stable, split condition as <= , >
+            left = left->next;
+        else
+            list_move_tail((right = right->next)->prev, left);
+    }
+    while (right->next != left && right->next != head) {
+        int cmp = strcmp(list_entry(left, element_t, list)->value,
+                         list_entry(right, element_t, list)->value);
+
+        list_move_tail((right = right->next)->prev, cmp < 0 ? head : left);
+    }
+    return head;
+}
 
 /*
  * Create new element_t node and assign s to value.
