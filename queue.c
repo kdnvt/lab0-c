@@ -267,26 +267,64 @@ void q_sort(struct list_head *head)
     if (!head || list_empty(head) || list_is_singular(head))
         return;
 
-    int count = 0, n = q_size(head);
-    struct list_head *sorted[STACKSIZE];
+    /*
+     * The sorted list implementation below doesn't include the head
+     * node. Which means every node in a sorted list is a member of
+     * element_t.
+     *
+     */
 
+    /*
+     * In order to save memory space, this implementation use
+     * member pointer next to determine each sorted list.
+     *
+     * If a pointer
+     *
+     *      struct list_head *tail;
+     *
+     * points the end of a sorted list, its tail->next will point to
+     * next sorted list, instead of first node of sorted list.
+     * At beginning , merge sort split the list, so each node itself
+     * is a sorted list. Therefore, each node with prev pointing to
+     * itself, and next pointing to next node.
+     * Final sorted list has it tail's next point to head.
+     */
     struct list_head *cur, *safe;
     list_for_each_safe (cur, safe, head)
-        INIT_LIST_HEAD(sorted[count++] = cur);
+        cur->prev = cur;
 
-    for (int size_each_list = 1; size_each_list < n; size_each_list *= 2) {
-        for (int i = 0; i + size_each_list < n; i += size_each_list * 2) {
-            struct list_head *left = sorted[i];
-            struct list_head *right = sorted[i + size_each_list];
-            sorted[i] = merge(left, right);
+    /* pointer first points to first sorted list */
+    struct list_head *first = head->next;
+    INIT_LIST_HEAD(head);
+    while (first->prev->next != head) {
+        struct list_head **last = &first;
+        struct list_head *next_list = (*last)->prev->next;
+        struct list_head *next_next_list = next_list->prev->next;
+
+        while ((*last) != head && next_list != head) {
+            /*
+             * Make each sorted list doubly circular list
+             * to make use of function merge.
+             */
+            (*last)->prev->next = (*last);
+            next_list->prev->next = next_list;
+            (*last) = merge((*last), next_list);
+
+            /*
+             * The result of function merge is a doubly circular list,
+             * so make tail of list point it next to next sorted list.
+             */
+            last = &((*last)->prev->next);
+            *last = next_next_list;
+            next_list = (*last)->prev->next;
+            next_next_list = next_list->prev->next;
         }
     }
-    list_add_tail(head, sorted[0]);
+    list_add_tail(head, first);
 }
 /*
  * The list in this function is doubly circular linked_list without
  * the Head node.
- * Move each node in list right to list left at corresponding position.
  */
 struct list_head *merge(struct list_head *left, struct list_head *right)
 {
