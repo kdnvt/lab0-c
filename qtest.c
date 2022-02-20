@@ -82,6 +82,8 @@ static const char charset[] = "abcdefghijklmnopqrstuvwxyz";
 /* Forward declarations */
 static bool show_queue(int vlevel);
 
+/* Function in queue.c */
+extern void q_shuffle(struct list_head *head);
 
 typedef int
     __attribute__((nonnull(2, 3))) (*list_cmp_func_t)(void *,
@@ -830,29 +832,6 @@ static bool do_show(int argc, char *argv[])
     return show_queue(0);
 }
 
-
-void q_shuffle(struct list_head *head)
-{
-    if (!head || list_empty(head))
-        return;
-
-    srand(time(NULL));
-    int n = q_size(head);
-
-    struct list_head *first = head->next;
-    list_del_init(head);
-
-    for (int i = 0; i < n - 1; i++) {
-        int rnd = rand() % (n - i);
-        int dir = rnd > (n - i) / 2 ? 0 : 1;
-        rnd = dir ? n - i - rnd : rnd;
-        for (int j = 0; j < rnd; j++) {
-            first = dir ? first->prev : first->next;
-        }
-        list_move(first->next, head);
-    }
-    list_move(first, head);
-}
 
 static bool do_shuffle(int argc, char *argv[])
 {
