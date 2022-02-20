@@ -6,6 +6,7 @@
 #include "harness.h"
 #include "queue.h"
 #define STACKSIZE 1000000
+int cmp_count = 0;
 
 struct list_head *merge(struct list_head *left, struct list_head *right);
 element_t *element_new(char *s);
@@ -266,7 +267,7 @@ void q_sort(struct list_head *head)
 {
     if (!head || list_empty(head) || list_is_singular(head))
         return;
-
+    cmp_count = 0;
     /*
      * The sorted list implementation below doesn't include the head
      * node. Which means every node in a sorted list is a member of
@@ -329,7 +330,7 @@ void q_sort(struct list_head *head)
 struct list_head *merge(struct list_head *left, struct list_head *right)
 {
     struct list_head *head;
-
+    cmp_count++;
     int cmp = strcmp(list_entry(left, element_t, list)->value,
                      list_entry(right, element_t, list)->value);
     struct list_head **chosen =
@@ -340,6 +341,7 @@ struct list_head *merge(struct list_head *left, struct list_head *right)
     list_del_init(head);
 
     while (left->next != head && right->next != head) {
+        cmp_count++;
         cmp = strcmp(list_entry(left, element_t, list)->value,
                      list_entry(right, element_t, list)->value);
         chosen = cmp <= 0 ? &left : &right;  // cmp <= 0 for stability

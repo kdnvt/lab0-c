@@ -73,6 +73,8 @@ static int fail_count = 0;
 
 static int string_length = MAXSTRING;
 
+extern int cmp_count;
+
 #define MIN_RANDSTR_LEN 5
 #define MAX_RANDSTR_LEN 10
 static const char charset[] = "abcdefghijklmnopqrstuvwxyz";
@@ -915,6 +917,7 @@ static void console_init()
               NULL);
     add_param("fail", &fail_limit,
               "Number of times allow queue operations to return false", NULL);
+    add_param("cmp_count", &cmp_count, "Number of times compare called", NULL);
 }
 
 /* Signal handlers */
@@ -1258,7 +1261,7 @@ __attribute__((nonnull(2, 3))) void list_sort(void *priv,
 {
     struct list_head *list = head->next, *pending = NULL;
     size_t count = 0; /* Count of pending */
-
+    cmp_count = 0;
     if (list == head->prev) /* Zero or one elements */
         return;
 
@@ -1325,6 +1328,7 @@ __attribute__((nonnull(2, 3))) void list_sort(void *priv,
 
 int my_cmp(void *priv, const struct list_head *a, const struct list_head *b)
 {
+    cmp_count++;
     return strcmp(list_entry(a, element_t, list)->value,
                   list_entry(b, element_t, list)->value);
 }
