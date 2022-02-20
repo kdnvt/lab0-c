@@ -12,6 +12,9 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+
+#include <math.h>
+
 #include "dudect/fixture.h"
 #include "list.h"
 
@@ -81,6 +84,8 @@ static const char charset[] = "abcdefghijklmnopqrstuvwxyz";
 
 /* Forward declarations */
 static bool show_queue(int vlevel);
+
+double average_K(int size, int kernel);
 
 /* Function in queue.c */
 extern void q_shuffle(struct list_head *head);
@@ -855,6 +860,52 @@ static bool do_shuffle(int argc, char *argv[])
     return !error_check();
 }
 
+
+static bool do_average_k(int argc, char *argv[])
+{
+    if (argc != 3) {
+        report(1, "%s needs 2 arguments", argv[0]);
+        return false;
+    }
+
+    int kernel;
+
+    if (!strcmp(argv[1], "kernel_sort")) {
+        kernel = 1;
+    }
+
+    if (!strcmp(argv[1], "sort")) {
+        kernel = 0;
+    }
+
+    int size;
+    if (!get_int(argv[2], &size)) {
+        report(1, "Invalid number '%s'", argv[2]);
+        return false;
+    }
+
+    int bits = size;
+    for (; !(bits & 1); bits >>= 1)
+        ;
+    if (bits >> 1) {
+        report(1, "Invalid number '%s','%s' must be power of 2", argv[2],
+               argv[2]);
+        return false;
+    }
+
+    error_check();
+
+    double k;
+    // if (exception_setup(true))
+    k = average_K(size, kernel);
+    // exception_cancel();
+
+    printf("%lf\n", k);
+
+    show_queue(3);
+    return !error_check();
+}
+
 static void console_init()
 {
     ADD_COMMAND(new, "                | Create new queue");
@@ -890,6 +941,7 @@ static void console_init()
     ADD_COMMAND(swap,
                 "                | Swap every two adjacent nodes in queue");
     ADD_COMMAND(shuffle, "                | Shuffle the queue");
+    ADD_COMMAND(average_k, "                | Experiment K");
     add_param("length", &string_length, "Maximum length of displayed string",
               NULL);
     add_param("malloc", &fail_probability, "Malloc failure probability percent",
@@ -1311,3 +1363,32 @@ int my_cmp(void *priv, const struct list_head *a, const struct list_head *b)
     return strcmp(list_entry(a, element_t, list)->value,
                   list_entry(b, element_t, list)->value);
 }
+
+double average_K(int size, int kernel)
+{
+    if (l_meta.l)
+        q_free(l_meta.l);
+    int end = size * 2;
+    double sum_k = 0;
+    for (int n = size; n < end; n++) {
+        l_meta.l = q_new();
+        for (int j = 0; j < n; j++) {
+            char randstr_buf[MAX_RANDSTR_LEN];
+            fill_rand_string(randstr_buf, sizeof(randstr_buf));
+            q_insert_tail(l_meta.l, randstr_buf);
+        }
+
+        if (kernel)
+            list_sort(NULL, l_meta.l, my_cmp);
+        else
+            q_sort(l_meta.l);
+
+
+        sum_k += log2(n) - (double) (cmp_count - 1) / n;
+        q_free(l_meta.l);
+    }
+    l_meta.l = NULL;
+    sum_k /= size;
+    return sum_k;
+}
+
