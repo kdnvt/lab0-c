@@ -228,8 +228,7 @@ void q_swap(struct list_head *head)
     for (node = head->next; node != head && node->next != head;
          node = node->next) {
         struct list_head *tmp = node->next;
-        list_del(tmp);
-        list_add_tail(tmp, node);
+        list_move_tail(tmp, node);
     }
 }
 
@@ -245,10 +244,8 @@ void q_reverse(struct list_head *head)
     if (!head || list_empty(head))
         return;
     struct list_head *node, *safe;
-    list_for_each_safe (node, safe, head) {
-        list_del(node);
-        list_add(node, head);
-    }
+    list_for_each_safe (node, safe, head)
+        list_move(node, head);
 }
 
 
