@@ -524,37 +524,87 @@ static bool do_dedup(int argc, char *argv[])
         return false;
     }
 
+    LIST_HEAD(l_copy);
+    element_t *item, *tmp;
+
+    // Copy l_meta.l to l_copy
+    if (l_meta.l && !list_empty(l_meta.l)) {
+        list_for_each_entry (item, l_meta.l, list) {
+            size_t slen;
+            tmp = malloc(sizeof(element_t));
+            if (!tmp)
+                break;
+            INIT_LIST_HEAD(&tmp->list);
+            slen = strlen(item->value) + 1;
+            tmp->value = malloc(slen);
+            if (!tmp->value) {
+                free(tmp);
+                break;
+            }
+            memcpy(tmp->value, item->value, slen);
+            list_add_tail(&tmp->list, &l_copy);
+        }
+        // Return false if the loop does not leave properly
+        if (&item->list != l_meta.l) {
+            list_for_each_entry_safe (item, tmp, &l_copy, list) {
+                free(item->value);
+                free(item);
+            }
+            report(1,
+                   "INTERNAL ERROR.  Could not allocate space for "
+                   "duplicate checking");
+            return false;
+        }
+    }
+
     bool ok = true;
-    // set_noallocate_mode(true);
     if (exception_setup(true))
         ok = q_delete_dup(l_meta.l);
     exception_cancel();
 
-    // set_noallocate_mode(false);
-
     if (!ok) {
+        list_for_each_entry_safe (item, tmp, &l_copy, list) {
+            free(item->value);
+            free(item);
+        }
         report(1, "ERROR: Calling delete duplicate on null queue");
         return false;
     }
 
-    element_t *item = NULL;
-    if (l_meta.size) {
-        list_for_each_entry (item, l_meta.l, list) {
-            element_t *next_item;
-            if (item->list.next == l_meta.l)
-                break;
-            next_item = list_entry(item->list.next, element_t, list);
-
-            // assume queue has been sorted
-            if (strcmp(item->value, next_item->value) == 0) {
-                report(1, "ERROR: Contain duplicate string on queue");
-                ok = false;
-                break;
-            }
-        }
+    struct list_head *l_tmp = l_meta.l->next;
+    bool is_this_dup = false;
+    // Compare between new list and old one
+    list_for_each_entry (item, &l_copy, list) {
+        // Skip comparison with new list if the string is duplicate
+        bool is_next_dup =
+            item->list.next != &l_copy &&
+            strcmp(list_entry(item->list.next, element_t, list)->value,
+                   item->value) == 0;
+        if (is_this_dup || is_next_dup) {
+            // Update list size
+            lcnt--;
+            l_meta.size--;
+        } else if (l_tmp != l_meta.l &&
+                   strcmp(list_entry(l_tmp, element_t, list)->value,
+                          item->value) == 0)
+            l_tmp = l_tmp->next;
+        else
+            ok = false;
+        is_this_dup = is_next_dup;
     }
-    show_queue(3);
+    // All elements in new list should be traversed
+    ok = ok && l_tmp == l_meta.l;
+    if (!ok)
+        report(1,
+               "ERROR: Duplicate strings are in queue or distinct strings are "
+               "not in queue");
 
+    list_for_each_entry_safe (item, tmp, &l_copy, list) {
+        free(item->value);
+        free(item);
+    }
+
+    show_queue(3);
     return ok && !error_check();
 }
 
@@ -731,6 +781,7 @@ static bool do_dm(int argc, char *argv[])
         ok = q_delete_mid(l_meta.l);
     exception_cancel();
 
+    lcnt--;
     show_queue(3);
     return ok && !error_check();
 }
@@ -1092,11 +1143,15 @@ int main(int argc, char *argv[])
     init_cmd();
     console_init();
 
-    /* Trigger call back function(auto completion) */
-    linenoiseSetCompletionCallback(completion);
+    /* Initialize linenoise only when infile_name not exist */
+    if (!infile_name) {
+        /* Trigger call back function(auto completion) */
+        linenoiseSetCompletionCallback(completion);
 
-    linenoiseHistorySetMaxLen(HISTORY_LEN);
-    linenoiseHistoryLoad(HISTORY_FILE); /* Load the history at startup */
+        linenoiseHistorySetMaxLen(HISTORY_LEN);
+        linenoiseHistoryLoad(HISTORY_FILE); /* Load the history at startup */
+    }
+
     set_verblevel(level);
     if (level > 1) {
         set_echo(true);
@@ -1108,7 +1163,9 @@ int main(int argc, char *argv[])
 
     bool ok = true;
     ok = ok && run_console(infile_name);
-    ok = ok && finish_cmd();
+
+    /* Do finish_cmd() before check whether ok is true or false */
+    ok = finish_cmd() && ok;
 
     return ok ? 0 : 1;
 }
