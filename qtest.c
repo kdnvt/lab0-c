@@ -1423,6 +1423,7 @@ int my_cmp(void *priv, const struct list_head *a, const struct list_head *b)
 
 double average_K(int size, int kernel)
 {
+    FILE *fp = kernel ? fopen("k_kernel.txt", "w") : fopen("k_sort.txt", "w");
     if (l_meta.l)
         q_free(l_meta.l);
     int end = size * 2;
@@ -1440,12 +1441,13 @@ double average_K(int size, int kernel)
         else
             q_sort(l_meta.l);
 
-
-        sum_k += log2(n) - (double) (cmp_count - 1) / n;
+        double cur_k = log2(n) - (double) (cmp_count - 1) / n;
+        fprintf(fp, "%d %lf\n", n, cur_k);
+        sum_k += cur_k;
         q_free(l_meta.l);
     }
+    fclose(fp);
     l_meta.l = NULL;
     sum_k /= size;
     return sum_k;
 }
-
