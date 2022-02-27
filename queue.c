@@ -387,13 +387,9 @@ element_t *element_new(char *s)
     if (!(node = malloc(sizeof(*node))))
         return NULL;
 
-    node->value = NULL;
-    if (s == NULL)
-        return node;
-
     char *str;
     int n = strlen(s) + 1;
-    if (!(str = malloc(sizeof(*str) * n))) {
+    if (!(str = malloc(n))) {
         free(node);
         return NULL;
     }
