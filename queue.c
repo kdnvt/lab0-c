@@ -33,22 +33,13 @@ struct list_head *q_new()
 /* Free all storage used by queue */
 void q_free(struct list_head *l)
 {
-    if (!l)
-        return;
-    if (list_empty(l)) {
+    if (!l || list_empty(l)) {
         free(l);
         return;
     }
-    /*
-    if (!l || (list_empty(l) && (free(l),true)))
-        return ;
-    */
     element_t *entry, *safe;
-    list_for_each_entry_safe (entry, safe, l, list) {
-        if (entry->value)
-            free(entry->value);
-        free(entry);
-    }
+    list_for_each_entry_safe (entry, safe, l, list)
+        q_release_element(entry);
     free(l);
 
     return;
