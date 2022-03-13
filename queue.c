@@ -324,6 +324,12 @@ void q_sort(struct list_head *head)
             next_list->prev->next = next_list;
             (*last) = merge((*last), next_list);
 
+            if (next_next_list != head && next_next_list->prev->next == head) {
+                next_next_list->prev->next = next_next_list;
+                (*last) = merge((*last), next_next_list);
+                (*last)->prev->next = head;
+                break;
+            }
             /*
              * The result of function merge is a doubly circular list,
              * so make tail of list point it next to next sorted list.
